@@ -7,19 +7,22 @@ import org.jetbrains.kotlin.analysis.api.KtAnalysisSession
 import org.jetbrains.kotlin.analysis.api.analyzeWithReadAction
 import org.jetbrains.kotlin.analysis.api.symbols.*
 import org.jetbrains.kotlin.idea.findUsages.UsageTypeEnum.*
-import org.jetbrains.kotlin.idea.references.KtArrayAccessReference
-import org.jetbrains.kotlin.idea.references.KtInvokeFunctionReference
-import org.jetbrains.kotlin.idea.references.KtSimpleReference
-import org.jetbrains.kotlin.idea.references.mainReference
+import org.jetbrains.kotlin.idea.references.*
 import org.jetbrains.kotlin.psi.*
 import org.jetbrains.kotlin.psi.psiUtil.getParentOfTypeAndBranch
 import org.jetbrains.kotlin.util.OperatorNameConventions
 
 class KotlinUsageTypeProviderFirImpl : KotlinUsageTypeProvider() {
-
     override fun getUsageTypeEnumByReference(refExpr: KtReferenceExpression): UsageTypeEnum? {
+        for (reference in refExpr.references) {
+            val ktReference = reference as? KtReference ?: continue
+            getUsageTypeEnumByReference(refExpr, ktReference)?.let { return it }
+        }
+        return null
+    }
 
-        val reference = refExpr.mainReference
+    private fun getUsageTypeEnumByReference(refExpr: KtReferenceExpression, reference: KtReference): UsageTypeEnum? {
+
         check(reference is KtSimpleReference<*>) { "Reference should be KtSimpleReference but not ${reference::class}" }
 
         fun KtAnalysisSession.getFunctionUsageType(functionSymbol: KtFunctionLikeSymbol): UsageTypeEnum? {
